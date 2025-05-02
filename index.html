@@ -1,9 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>아이엠파인 SD팀 지원자 서교진</title>
+    <link rel="stylesheet" href="index.css" />
   </head>
-  <body></body>
+  <body>
+    <div class="container">
+      <header>
+        <h1>아이엠파인 SD팀 지원자 서교진</h1>
+      </header>
+
+      <!-- 1. 그래프 -->
+      <section>
+        <h2>1. 그래프</h2>
+        <canvas id="chart"></canvas>
+      </section>
+
+      <!-- 2. 값 편집 -->
+      <section>
+        <h2>2. 값 편집</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>값</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+        <button class="apply-btn" onclick="applyChanges()">Apply</button>
+      </section>
+
+      <!-- 3. 값 추가 -->
+      <section>
+        <h2>3. 값 추가</h2>
+        <div class="add-group">
+          <input type="number" id="new-id" placeholder="ID" />
+          <input type="number" id="new-value" placeholder="VALUE" />
+          <button onclick="addValue()">Add</button>
+        </div>
+      </section>
+
+      <!-- 4. 값 고급 편집 -->
+      <section>
+        <h2>4. 값 고급 편집</h2>
+        <textarea id="json-editor" rows="10"></textarea>
+        <button class="apply-btn" onclick="applyJson()">Apply</button>
+      </section>
+    </div>
+
+    <script src="main.js"></script>
+  </body>
 </html>
