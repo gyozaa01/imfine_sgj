@@ -1,5 +1,5 @@
 // 더미 데이터
-const data = [
+let data = [
   { id: 0, value: 75 },
   { id: 1, value: 20 },
   { id: 2, value: 80 },
@@ -25,59 +25,77 @@ function resizeCanvas() {
 }
 
 function drawChart() {
-  resizeCanvas();
+  try {
+    resizeCanvas();
 
-  const W = canvas.width;
-  const H = canvas.height;
+    const W = canvas.width;
+    const H = canvas.height;
 
-  // 데이터 중 최대값 기준으로 Y축 스케일 조정
-  const maxValue = Math.max(...data.map((d) => d.value), 100);
-  const scaleY = (H - margin.top - margin.bottom) / maxValue;
+    // 빈 데이터 처리
+    if (data.length === 0) {
+      // 캔버스 초기화
+      ctx.clearRect(0, 0, W, H);
+      // 메시지 표시
+      ctx.fillStyle = "grey";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "16px Arial";
+      ctx.fillText("현재 데이터가 없습니다.", W / 2, H / 2);
+      return;
+    }
 
-  // 초기화
-  ctx.clearRect(0, 0, W, H);
+    // 데이터 중 최대값 기준으로 Y축 스케일 조정
+    const maxValue = Math.max(...data.map((d) => d.value), 100);
+    const scaleY = (H - margin.top - margin.bottom) / maxValue;
 
-  // 축
-  ctx.strokeStyle = "#000";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(margin.left, margin.top);
-  ctx.lineTo(margin.left, H - margin.bottom);
-  ctx.lineTo(W - margin.right, H - margin.bottom);
-  ctx.stroke();
+    // 초기화
+    ctx.clearRect(0, 0, W, H);
 
-  // Y축 기준선 -> 100
-  const y100 = H - margin.bottom - 100 * scaleY;
-  ctx.strokeStyle = "#ddd";
-  ctx.beginPath();
-  ctx.moveTo(margin.left, y100);
-  ctx.lineTo(W - margin.right, y100);
-  ctx.stroke();
-  ctx.fillStyle = "#000";
-  ctx.textAlign = "right";
-  ctx.textBaseline = "middle";
-  ctx.fillText("100", margin.left - 5, y100);
+    // 축
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(margin.left, margin.top);
+    ctx.lineTo(margin.left, H - margin.bottom);
+    ctx.lineTo(W - margin.right, H - margin.bottom);
+    ctx.stroke();
 
-  // 막대 너비와 간격 계산
-  const totalW = W - margin.left - margin.right;
-  const barW = Math.min(40, (totalW / data.length) * 0.6);
-  const gap = (totalW - barW * data.length) / (data.length + 1);
-
-  // 막대 그리기 & X축 레이블
-  ctx.fillStyle = "#ccc";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  data.forEach((item, i) => {
-    const x = margin.left + gap * (i + 1) + barW * i;
-    const barH = item.value * scaleY;
-    const y = H - margin.bottom - barH;
-    ctx.fillRect(x, y, barW, barH);
-
-    // ID 레이블
+    // Y축 기준선 → 100
+    const y100 = H - margin.bottom - 100 * scaleY;
+    ctx.strokeStyle = "#ddd";
+    ctx.beginPath();
+    ctx.moveTo(margin.left, y100);
+    ctx.lineTo(W - margin.right, y100);
+    ctx.stroke();
     ctx.fillStyle = "#000";
-    ctx.fillText(item.id, x + barW / 2, H - margin.bottom + 5);
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    ctx.fillText("100", margin.left - 5, y100);
+
+    // 막대 너비와 간격 계산
+    const totalW = W - margin.left - margin.right;
+    const barW = Math.min(40, (totalW / data.length) * 0.6);
+    const gap = (totalW - barW * data.length) / (data.length + 1);
+
+    // 막대 그리기 & X축 레이블
     ctx.fillStyle = "#ccc";
-  });
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    data.forEach((item, i) => {
+      const x = margin.left + gap * (i + 1) + barW * i;
+      const barH = item.value * scaleY;
+      const y = H - margin.bottom - barH;
+      ctx.fillRect(x, y, barW, barH);
+
+      // ID 레이블
+      ctx.fillStyle = "#000";
+      ctx.fillText(item.id, x + barW / 2, H - margin.bottom + 5);
+      ctx.fillStyle = "#ccc";
+    });
+  } catch (err) {
+    console.error(err);
+    alert("차트 렌더링 중 오류가 발생했습니다.");
+  }
 }
 
 function updateTable() {
@@ -98,7 +116,15 @@ function updateTable() {
 }
 
 function updateJSON() {
-  document.getElementById("json-editor").value = JSON.stringify(data, null, 2);
+  const ta = document.getElementById("json-editor");
+
+  if (data.length === 0) {
+    // 데이터가 없으면 placeholder만 보이도록 value 비우기
+    ta.value = "";
+  } else {
+    // 데이터가 있으면 실제 JSON 표시
+    ta.value = JSON.stringify(data, null, 2);
+  }
 }
 
 // ID 중복 검사 함수
@@ -108,6 +134,10 @@ function hasDuplicateIds(arr) {
 }
 
 function applyChanges() {
+  // data를 ID 오름차순으로 정렬
+  data.sort((a, b) => a.id - b.id);
+
+  // 정렬된 데이터를 반영해 JSON, 차트, 테이블에 모두 갱신
   updateJSON();
   drawChart();
   updateTable();
@@ -116,26 +146,69 @@ function applyChanges() {
 function addValue() {
   const id = Number(document.getElementById("new-id").value);
   const value = Number(document.getElementById("new-value").value);
+
+  // 숫자 여부
   if (isNaN(id) || isNaN(value)) {
-    alert("ID와 VALUE에 숫자를 입력하세요.");
+    alert("ID와 값에 숫자를 입력하세요.");
     return;
   }
+
+  // 정수 여부
+  if (!Number.isInteger(id) || !Number.isInteger(value)) {
+    alert("ID와 값에는 정수만 입력할 수 있습니다.");
+    return;
+  }
+
+  // 음수 차단
+  if (id < 0 || value < 0) {
+    alert("ID와 값에는 음수를 입력할 수 없습니다.");
+    return;
+  }
+
+  // 값 상한 검증
+  const MAX_VALUE = 1000;
+  if (value > MAX_VALUE) {
+    alert(`값은 최대 ${MAX_VALUE}를 넘을 수 없습니다.`);
+    return;
+  }
+
+  // 중복 검사
   if (data.some((d) => d.id === id)) {
     alert("ID가 중복됩니다. 다른 ID를 입력하세요.");
     return;
   }
+
   data.push({ id, value });
   applyChanges();
+
+  // 입력창 초기화
+  document.getElementById("new-id").value = "";
+  document.getElementById("new-value").value = "";
 }
 
 function deleteValue(id) {
+  // 삭제 전 확인 alert
+  const ok = confirm("정말 삭제하시겠습니까?");
+  if (!ok) return;
+
+  // 확인했으면 해당 항목 삭제
   data = data.filter((d) => d.id !== id);
   applyChanges();
 }
 
 function applyJson() {
+  const textarea = document.getElementById("json-editor");
+  const raw = textarea.value.trim();
+
+  // 아무 입력도 없거나, 빈 배열만 있을 때
+  if (!raw || raw === "[]" || raw === "[ ]") {
+    // 텍스트박스 내용을 지우고 placeholder만 남김
+    textarea.value = "";
+    return;
+  }
+
   try {
-    const newData = JSON.parse(document.getElementById("json-editor").value);
+    const newData = JSON.parse(raw);
     if (!Array.isArray(newData)) {
       alert("JSON은 배열 형태여야 합니다.");
       return;
@@ -144,7 +217,6 @@ function applyJson() {
       alert("JSON 내에 중복된 ID가 있습니다.");
       return;
     }
-
     // 타입 검증
     for (const d of newData) {
       if (typeof d.id !== "number" || typeof d.value !== "number") {
@@ -155,7 +227,9 @@ function applyJson() {
     data = newData;
     applyChanges();
   } catch (e) {
-    alert("유효하지 않은 JSON입니다.");
+    alert(
+      '유효하지 않은 JSON입니다.\n예시: [{"id":0,"value":75},{"id":1,"value":20}]'
+    );
   }
 }
 
