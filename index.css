@@ -122,3 +122,16 @@ textarea {
 .filter-group button {
   flex: 0 0 auto;
 }
+
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  display: none;
+  transform: translate(-50%, -100%);
+}
