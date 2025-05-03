@@ -1,11 +1,46 @@
-// 더미 데이터
-let data = [
-  { id: 0, value: 75 },
-  { id: 1, value: 20 },
-  { id: 2, value: 80 },
-  { id: 3, value: 100 },
-  { id: 4, value: 70 },
-];
+// 로컬 스토리지에서 불러오기
+function loadData() {
+  const raw = localStorage.getItem("chartData");
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+  // 캐시가 없거나 파싱 실패 시 기본 더미 반환
+  return [
+    // 더미 데이터
+    { id: 0, value: 75 },
+    { id: 1, value: 20 },
+    { id: 2, value: 80 },
+    { id: 3, value: 100 },
+    { id: 4, value: 70 },
+  ];
+}
+
+// 로컬스토리지에 저장
+function saveData() {
+  try {
+    localStorage.setItem("chartData", JSON.stringify(data));
+  } catch (e) {
+    if (
+      e instanceof DOMException &&
+      (e.name === "QuotaExceededError" ||
+        e.name === "NS_ERROR_DOM_QUOTA_REACHED")
+    ) {
+      alert(
+        "저장 공간이 가득 찼습니다. 브라우저 로컬 스토리지를 비우거나\n" +
+          "데이터 일부를 삭제해 주세요."
+      );
+    } else {
+      console.error("Storage error:", e);
+      alert("알 수 없는 저장 오류가 발생했습니다.");
+    }
+  }
+}
+
+// 초기 데이터 로딩
+let data = loadData();
 
 // 캔버스 & 컨텍스트 가져오기
 const canvas = document.getElementById("chart");
@@ -99,20 +134,30 @@ function drawChart() {
 }
 
 function updateTable() {
-  const tbody = document.getElementById("table-body");
-  tbody.innerHTML = "";
-  data.forEach((item, i) => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${item.id}</td>
-      <td>
-        <input type="number" value="${item.value}"
-               onchange="data[${i}].value = Number(this.value)" />
-      </td>
-      <td><span class="delete" onclick="deleteValue(${item.id})">삭제</span></td>
-    `;
-    tbody.appendChild(row);
-  });
+  try {
+    const tbody = document.getElementById("table-body");
+    tbody.innerHTML = "";
+    data.forEach((item, i) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${item.id}</td>
+        <td>
+          <input
+            type="number"
+            value="${item.value}"
+            onchange="data[${i}].value = Number(this.value)"
+          />
+        </td>
+        <td>
+          <span class="delete" onclick="deleteValue(${item.id})">삭제</span>
+        </td>
+      `;
+      tbody.appendChild(row);
+    });
+  } catch (e) {
+    console.error(e);
+    alert("테이블 업데이트 중 오류가 발생했습니다.");
+  }
 }
 
 function updateJSON() {
@@ -136,6 +181,8 @@ function hasDuplicateIds(arr) {
 function applyChanges() {
   // data를 ID 오름차순으로 정렬
   data.sort((a, b) => a.id - b.id);
+
+  saveData(); // 캐시 저장
 
   // 정렬된 데이터를 반영해 JSON, 차트, 테이블에 모두 갱신
   updateJSON();
