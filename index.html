@@ -13,8 +13,17 @@
       </header>
 
       <!-- 1. 그래프 -->
-      <section>
-        <h2>1. 그래프</h2>
+      <section class="graph-section">
+        <div class="graph-header">
+          <h2>1. 그래프</h2>
+          <div class="sort-switch">
+            <label class="switch">
+              <input type="checkbox" id="sort-toggle" />
+              <span class="slider"></span>
+            </label>
+            <span id="sort-label">오름차순</span>
+          </div>
+        </div>
         <canvas id="chart" width="400" height="300"></canvas>
         <div id="tooltip" class="tooltip"></div>
       </section>
@@ -69,8 +78,8 @@
           <input type="number" id="filter-min" placeholder="최소" />
           <input type="number" id="filter-max" placeholder="최대" />
 
-          <button onclick="applyFilter()">적용</button>
-          <button onclick="clearFilter()">초기화</button>
+          <button onclick="applyFilter()">Apply</button>
+          <button onclick="clearFilter()">Reset</button>
         </div>
       </section>
     </div>
