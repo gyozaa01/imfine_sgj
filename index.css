@@ -48,22 +48,41 @@ td {
   padding: 6px;
   text-align: center;
 }
-
-input[type="number"],
-textarea {
-  font-family: inherit;
-  padding: 4px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+input[type="number"] {
+  width: 80px;
+  margin-right: 5px;
 }
-
 button {
-  background-color: #fff;
-  border: 1px solid #ccc;
-  padding: 6px 12px;
+  padding: 4px 10px;
   cursor: pointer;
-  border-radius: 4px;
 }
-button:hover {
-  background-color: #f0f0f0;
+.apply-btn {
+  display: block;
+  margin: 10px 0 0 auto;
+}
+textarea {
+  width: 100%;
+}
+.delete {
+  color: red;
+  cursor: pointer;
+}
+
+.add-group {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.add-group #new-id {
+  flex: 2;
+}
+
+.add-group #new-value {
+  flex: 7;
+}
+
+.add-group button {
+  flex: 1;
 }
