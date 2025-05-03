@@ -199,10 +199,13 @@ function hasDuplicateIds(arr) {
   return new Set(ids).size !== ids.length;
 }
 
+// 정렬 변수 (true -> 오름차순, false -> 내림차순)
+let sortAsc = true;
+
 // 전체 동기화
 function applyChanges() {
-  // data를 ID 오름차순으로 정렬
-  data.sort((a, b) => a.id - b.id);
+  // data를 ID 기본은 오름차순으로 정렬
+  data.sort((a, b) => (sortAsc ? a.id - b.id : b.id - a.id));
 
   saveData(); // 캐시 저장
 
@@ -211,6 +214,16 @@ function applyChanges() {
   drawChart();
   updateTable();
 }
+
+// 토글 이벤트 핸들러
+const sortToggle = document.getElementById("sort-toggle");
+const sortLabel = document.getElementById("sort-label");
+
+sortToggle.addEventListener("change", () => {
+  sortAsc = !sortToggle.checked;
+  sortLabel.textContent = sortAsc ? "오름차순" : "내림차순";
+  applyChanges();
+});
 
 // 값 추가
 function addValue() {
