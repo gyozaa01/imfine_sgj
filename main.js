@@ -385,6 +385,24 @@ canvas.addEventListener("mouseout", () => {
   tooltip.style.display = "none";
 });
 
+// 이미지 다운로드 버튼 핸들러
+const downloadBtn = document.getElementById("download-btn");
+downloadBtn.addEventListener("click", () => {
+  // 현재 차트가 그려진 canvas
+  const canvas = document.getElementById("chart");
+
+  // 데이터 URL 생성
+  const dataURL = canvas.toDataURL("image/png");
+
+  // 임시 링크 생성 후 클릭으로 다운로드 트리거
+  const link = document.createElement("a");
+  link.href = dataURL;
+  link.download = "chart.png";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+});
+
 // 초기 렌더
 drawChart();
 updateTable();
