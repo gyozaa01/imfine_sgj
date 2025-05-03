@@ -108,17 +108,34 @@ textarea {
   flex: 1;
 }
 
+.filter-group input[type="number"] {
+  width: auto;
+}
+
+.filter-group select,
+.filter-group input[type="number"],
+.filter-group button {
+  height: 32px;
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
 .filter-group {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   margin-bottom: 20px;
+  width: 100%;
 }
-
-.filter-group label,
-.filter-group select,
-.filter-group input,
+.filter-group select {
+  flex: 2;
+}
+.filter-group input {
+  flex: 3;
+}
 .filter-group button {
-  flex: 0 0 auto;
+  flex: 1;
 }
