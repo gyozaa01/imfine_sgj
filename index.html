@@ -56,19 +56,16 @@
         <button class="apply-btn" onclick="applyJson()">Apply</button>
       </section>
 
+      <!-- 5. 데이터 필터링 -->
       <section>
         <h2>5. 데이터 필터링</h2>
         <div class="filter-group">
-          <label for="filter-field">필터 대상:</label>
           <select id="filter-field">
             <option value="id">ID</option>
             <option value="value">값</option>
           </select>
 
-          <label for="filter-min">Min:</label>
           <input type="number" id="filter-min" placeholder="최소" />
-
-          <label for="filter-max">Max:</label>
           <input type="number" id="filter-max" placeholder="최대" />
 
           <button onclick="applyFilter()">적용</button>
