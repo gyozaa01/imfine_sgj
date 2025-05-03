@@ -49,6 +49,23 @@ const ctx = canvas.getContext("2d");
 const container = document.querySelector(".container");
 const margin = { top: 20, right: 20, bottom: 30, left: 30 };
 
+// 필터 설정
+let filterField = null;
+let filterMin = null;
+let filterMax = null;
+
+// 필터된 데이터 반환
+function getFilteredData() {
+  if (!filterField) return data;
+  return data.filter((item) => {
+    const v = item[filterField];
+    if (filterMin !== null && v < filterMin) return false;
+    if (filterMax !== null && v > filterMax) return false;
+    return true;
+  });
+}
+
+// 캔버스 크기 조정
 function resizeCanvas() {
   const style = getComputedStyle(container);
   const cw =
@@ -59,15 +76,17 @@ function resizeCanvas() {
   canvas.height = 300;
 }
 
+// 차트 그리기
 function drawChart() {
   try {
     resizeCanvas();
 
     const W = canvas.width;
     const H = canvas.height;
+    const displayData = getFilteredData();
 
     // 빈 데이터 처리
-    if (data.length === 0) {
+    if (displayData.length === 0) {
       // 캔버스 초기화
       ctx.clearRect(0, 0, W, H);
       // 메시지 표시
@@ -75,12 +94,12 @@ function drawChart() {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.font = "16px Arial";
-      ctx.fillText("현재 데이터가 없습니다.", W / 2, H / 2);
+      ctx.fillText("필터된 결과가 없습니다.", W / 2, H / 2);
       return;
     }
 
     // 데이터 중 최대값 기준으로 Y축 스케일 조정
-    const maxValue = Math.max(...data.map((d) => d.value), 100);
+    const maxValue = Math.max(...displayData.map((d) => d.value), 100);
     const scaleY = (H - margin.top - margin.bottom) / maxValue;
 
     // 초기화
@@ -109,14 +128,14 @@ function drawChart() {
 
     // 막대 너비와 간격 계산
     const totalW = W - margin.left - margin.right;
-    const barW = Math.min(40, (totalW / data.length) * 0.6);
-    const gap = (totalW - barW * data.length) / (data.length + 1);
+    const barW = Math.min(40, (totalW / displayData.length) * 0.6);
+    const gap = (totalW - barW * displayData.length) / (displayData.length + 1);
 
     // 막대 그리기 & X축 레이블
     ctx.fillStyle = "#ccc";
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
-    data.forEach((item, i) => {
+    displayData.forEach((item, i) => {
       const x = margin.left + gap * (i + 1) + barW * i;
       const barH = item.value * scaleY;
       const y = H - margin.bottom - barH;
@@ -133,11 +152,12 @@ function drawChart() {
   }
 }
 
+// 테이블 업데이트
 function updateTable() {
   try {
     const tbody = document.getElementById("table-body");
     tbody.innerHTML = "";
-    data.forEach((item, i) => {
+    getFilteredData().forEach((item, i) => {
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${item.id}</td>
@@ -145,7 +165,7 @@ function updateTable() {
           <input
             type="number"
             value="${item.value}"
-            onchange="data[${i}].value = Number(this.value)"
+            onchange="data.find(d=>d.id===${item.id}).value = Number(this.value)"
           />
         </td>
         <td>
@@ -160,6 +180,7 @@ function updateTable() {
   }
 }
 
+// JSON 에디터 업데이트
 function updateJSON() {
   const ta = document.getElementById("json-editor");
 
@@ -178,6 +199,7 @@ function hasDuplicateIds(arr) {
   return new Set(ids).size !== ids.length;
 }
 
+// 전체 동기화
 function applyChanges() {
   // data를 ID 오름차순으로 정렬
   data.sort((a, b) => a.id - b.id);
@@ -190,6 +212,7 @@ function applyChanges() {
   updateTable();
 }
 
+// 값 추가
 function addValue() {
   const id = Number(document.getElementById("new-id").value);
   const value = Number(document.getElementById("new-value").value);
@@ -233,6 +256,7 @@ function addValue() {
   document.getElementById("new-value").value = "";
 }
 
+// 값 삭제
 function deleteValue(id) {
   // 삭제 전 확인 alert
   const ok = confirm("정말 삭제하시겠습니까?");
@@ -243,6 +267,7 @@ function deleteValue(id) {
   applyChanges();
 }
 
+// JSON 적용
 function applyJson() {
   const textarea = document.getElementById("json-editor");
   const raw = textarea.value.trim();
@@ -278,6 +303,29 @@ function applyJson() {
       '유효하지 않은 JSON입니다.\n예시: [{"id":0,"value":75},{"id":1,"value":20}]'
     );
   }
+}
+
+// 필터 적용
+function applyFilter() {
+  filterField = document.getElementById("filter-field").value;
+  const toNum = (id) => {
+    const v = Number(document.getElementById(id).value);
+    return isNaN(v) ? null : v;
+  };
+  filterMin = toNum("filter-min");
+  filterMax = toNum("filter-max");
+  drawChart();
+  updateTable();
+}
+
+// 필터 초기화
+function clearFilter() {
+  document.getElementById("filter-field").value = "id";
+  document.getElementById("filter-min").value = "";
+  document.getElementById("filter-max").value = "";
+  filterField = filterMin = filterMax = null;
+  drawChart();
+  updateTable();
 }
 
 // 초기 렌더

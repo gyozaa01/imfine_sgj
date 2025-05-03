@@ -107,3 +107,18 @@ textarea {
 .add-group button {
   flex: 1;
 }
+
+.filter-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.filter-group label,
+.filter-group select,
+.filter-group input,
+.filter-group button {
+  flex: 0 0 auto;
+}
