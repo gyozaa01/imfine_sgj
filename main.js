@@ -328,6 +328,50 @@ function clearFilter() {
   updateTable();
 }
 
+// 툴팁 element 가져오기
+const tooltip = document.getElementById("tooltip");
+
+// canvas 위 마우스 무브 핸들러
+canvas.addEventListener("mousemove", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  // drawChart 내부와 동일한 계산
+  const W = canvas.width;
+  const H = canvas.height;
+  const displayData = getFilteredData();
+  const maxValue = Math.max(...displayData.map((d) => d.value), 100);
+  const scaleY = (H - margin.top - margin.bottom) / maxValue;
+  const totalW = W - margin.left - margin.right;
+  const barW = Math.min(40, (totalW / displayData.length) * 0.6);
+  const gap = (totalW - barW * displayData.length) / (displayData.length + 1);
+
+  // 마우스가 어떤 막대 위에 있는지 검사
+  let found = null;
+  displayData.forEach((item, i) => {
+    const x = margin.left + gap * (i + 1) + barW * i;
+    const y = H - margin.bottom - item.value * scaleY;
+    if (mx >= x && mx <= x + barW && my >= y && my <= H - margin.bottom) {
+      found = item;
+    }
+  });
+
+  if (found) {
+    tooltip.style.left = `${e.clientX}px`;
+    tooltip.style.top = `${e.clientY}px`;
+    tooltip.textContent = `ID: ${found.id}, 값: ${found.value}`;
+    tooltip.style.display = "block";
+  } else {
+    tooltip.style.display = "none";
+  }
+});
+
+// canvas에서 벗어나면 툴팁 숨기기
+canvas.addEventListener("mouseout", () => {
+  tooltip.style.display = "none";
+});
+
 // 초기 렌더
 drawChart();
 updateTable();
