@@ -1,3 +1,39 @@
+// 최대값 상수
+const MAX_VALUE = 500;
+
+// 공통 검증 함수
+function validateData(items) {
+  // 1) ID, 값 -> 타입, 정수, 음수, 최대값 검사
+  for (const { id, value } of items) {
+    if (!Number.isInteger(id) || id < 0) {
+      alert("ID는 0 이상의 정수만 가능합니다.");
+      return false;
+    }
+    if (!Number.isInteger(value) || value < 0) {
+      alert("값은 0 이상의 정수만 가능합니다.");
+      return false;
+    }
+    if (value > MAX_VALUE) {
+      alert(`값은 최대 ${MAX_VALUE}을 넘을 수 없습니다.`);
+      return false;
+    }
+  }
+
+  // 2) 중복 ID 검사
+  if (hasDuplicateIds(items)) {
+    alert("중복된 ID가 있습니다. 서로 다른 ID를 사용해주세요.");
+    return false;
+  }
+
+  return true;
+}
+
+// ID 중복 검사
+function hasDuplicateIds(arr) {
+  const ids = arr.map((d) => d.id);
+  return new Set(ids).size !== ids.length;
+}
+
 // 로컬 스토리지에서 불러오기
 function loadData() {
   const raw = localStorage.getItem("chartData");
@@ -151,12 +187,24 @@ function drawChart(progress = 1) {
   }
 }
 
+// 애니메이션
+function animateChart(duration = 500) {
+  const start = performance.now();
+  function frame(now) {
+    const elapsed = now - start;
+    const p = Math.min(elapsed / duration, 1);
+    drawChart(p);
+    if (p < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
 // 테이블 업데이트
 function updateTable() {
   try {
     const tbody = document.getElementById("table-body");
     tbody.innerHTML = "";
-    getFilteredData().forEach((item, i) => {
+    getFilteredData().forEach((item) => {
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${item.id}</td>
@@ -164,7 +212,7 @@ function updateTable() {
           <input
             type="number"
             value="${item.value}"
-            onchange="data.find(d=>d.id===${item.id}).value = Number(this.value)"
+            onchange="handleInlineEdit(${item.id}, this)"
           />
         </td>
         <td>
@@ -192,10 +240,26 @@ function updateJSON() {
   }
 }
 
-// ID 중복 검사 함수
-function hasDuplicateIds(arr) {
-  const ids = arr.map((d) => d.id);
-  return new Set(ids).size !== ids.length;
+// 편집 롤백 처리
+function handleInlineEdit(id, inputElem) {
+  const oldValue = data.find((d) => d.id === id).value;
+  const newValue = Number(inputElem.value);
+
+  // 임시 변경
+  data.find((d) => d.id === id).value = newValue;
+
+  // 검증
+  if (!validateData(data)) {
+    // 실패 시 롤백
+    data.find((d) => d.id === id).value = oldValue;
+    inputElem.value = oldValue;
+    return;
+  }
+
+  // 성공 시 저장 및 갱신
+  saveData();
+  animateChart();
+  updateJSON();
 }
 
 // 정렬 변수 (true -> 오름차순, false -> 내림차순)
@@ -203,6 +267,7 @@ let sortAsc = true;
 
 // 전체 동기화
 function applyChanges() {
+  if (!validateData(data)) return;
   // data를 ID 기본은 오름차순으로 정렬
   data.sort((a, b) => (sortAsc ? a.id - b.id : b.id - a.id));
 
@@ -226,40 +291,14 @@ sortToggle.addEventListener("change", () => {
 
 // 값 추가
 function addValue() {
-  const id = Number(document.getElementById("new-id").value);
-  const value = Number(document.getElementById("new-value").value);
-
-  // 숫자 여부
-  if (isNaN(id) || isNaN(value)) {
-    alert("ID와 값에 숫자를 입력하세요.");
+  const idRaw = document.getElementById("new-id").value.trim();
+  const valueRaw = document.getElementById("new-value").value.trim();
+  if (!idRaw || !valueRaw) {
+    alert("ID와 값을 모두 입력해주세요.");
     return;
   }
-
-  // 정수 여부
-  if (!Number.isInteger(id) || !Number.isInteger(value)) {
-    alert("ID와 값에는 정수만 입력할 수 있습니다.");
-    return;
-  }
-
-  // 음수 차단
-  if (id < 0 || value < 0) {
-    alert("ID와 값에는 음수를 입력할 수 없습니다.");
-    return;
-  }
-
-  // 값 상한 검증
-  const MAX_VALUE = 1000;
-  if (value > MAX_VALUE) {
-    alert(`값은 최대 ${MAX_VALUE}를 넘을 수 없습니다.`);
-    return;
-  }
-
-  // 중복 검사
-  if (data.some((d) => d.id === id)) {
-    alert("ID가 중복됩니다. 다른 ID를 입력하세요.");
-    return;
-  }
-
+  const id = Number(idRaw);
+  const value = Number(valueRaw);
   data.push({ id, value });
   applyChanges();
 
@@ -282,9 +321,11 @@ function deleteValue(id) {
 // JSON 적용
 function applyJson() {
   const textarea = document.getElementById("json-editor");
-  const raw = textarea.value.trim();
+  const oldRaw = textarea.value;
+  const oldData = data.slice(); // data 배열 백업
+  const raw = oldRaw.trim();
 
-  // 아무 입력도 없거나, 빈 배열만 있을 때
+  // 1) 아무 입력도 없거나, 빈 배열만 있을 때
   if (!raw || raw === "[]" || raw === "[ ]") {
     // 텍스트박스 내용을 지우고 placeholder만 남김
     textarea.value = "";
@@ -293,27 +334,33 @@ function applyJson() {
 
   try {
     const newData = JSON.parse(raw);
+
+    // 2) 배열 형태 검사
     if (!Array.isArray(newData)) {
       alert("JSON은 배열 형태여야 합니다.");
+      textarea.value = oldRaw;
       return;
     }
-    if (hasDuplicateIds(newData)) {
-      alert("JSON 내에 중복된 ID가 있습니다.");
+
+    // 3) 유효성 검사 (ID 및 값 -> 타입, 정수, 음수, 최대값, 중복)
+    if (!validateData(newData)) {
+      textarea.value = oldRaw; // 에디터 복원
+      data = oldData; // 데이터 롤백
+      updateJSON(); // 에디터 내용 강제 갱신
       return;
     }
-    // 타입 검증
-    for (const d of newData) {
-      if (typeof d.id !== "number" || typeof d.value !== "number") {
-        alert("각 항목은 { id: number, value: number } 형태여야 합니다.");
-        return;
-      }
-    }
+
+    // 4) 모두 통과하면 실제 적용
     data = newData;
-    applyChanges();
+    applyChanges(); // 데이터 저장 -> 차트, 테이블, JSON 모두 갱신
   } catch (e) {
+    // 5) JSON 파싱 실패 시
     alert(
       '유효하지 않은 JSON입니다.\n예시: [{"id":0,"value":75},{"id":1,"value":20}]'
     );
+    textarea.value = oldRaw; // 에디터 복원
+    data = oldData; // 데이터 롤백
+    updateJSON(); // 에디터 내용 강제 갱신
   }
 }
 
@@ -338,17 +385,6 @@ function clearFilter() {
   filterField = filterMin = filterMax = null;
   drawChart();
   updateTable();
-}
-
-function animateChart(duration = 500) {
-  const start = performance.now();
-  function frame(now) {
-    const elapsed = now - start;
-    const p = Math.min(elapsed / duration, 1);
-    drawChart(p);
-    if (p < 1) requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
 }
 
 // 툴팁 element 가져오기
@@ -403,8 +439,6 @@ downloadBtn.addEventListener("click", () => {
 
   // 데이터 URL 생성
   const dataURL = canvas.toDataURL("image/png");
-
-  // 임시 링크 생성 후 클릭으로 다운로드 트리거
   const link = document.createElement("a");
   link.href = dataURL;
   link.download = "chart.png";
