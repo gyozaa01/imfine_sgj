@@ -77,7 +77,7 @@ function resizeCanvas() {
 }
 
 // 차트 그리기
-function drawChart() {
+function drawChart(progress = 1) {
   try {
     resizeCanvas();
 
@@ -98,10 +98,6 @@ function drawChart() {
       return;
     }
 
-    // 데이터 중 최대값 기준으로 Y축 스케일 조정
-    const maxValue = Math.max(...displayData.map((d) => d.value), 100);
-    const scaleY = (H - margin.top - margin.bottom) / maxValue;
-
     // 초기화
     ctx.clearRect(0, 0, W, H);
 
@@ -115,6 +111,8 @@ function drawChart() {
     ctx.stroke();
 
     // Y축 기준선 → 100
+    const maxValue = Math.max(...displayData.map((d) => d.value), 100);
+    const scaleY = (H - margin.top - margin.bottom) / maxValue;
     const y100 = H - margin.bottom - 100 * scaleY;
     ctx.strokeStyle = "#ddd";
     ctx.beginPath();
@@ -137,7 +135,8 @@ function drawChart() {
     ctx.textBaseline = "top";
     displayData.forEach((item, i) => {
       const x = margin.left + gap * (i + 1) + barW * i;
-      const barH = item.value * scaleY;
+      const targetH = item.value * scaleY;
+      const barH = targetH * progress;
       const y = H - margin.bottom - barH;
       ctx.fillRect(x, y, barW, barH);
 
@@ -211,7 +210,7 @@ function applyChanges() {
 
   // 정렬된 데이터를 반영해 JSON, 차트, 테이블에 모두 갱신
   updateJSON();
-  drawChart();
+  animateChart();
   updateTable();
 }
 
@@ -339,6 +338,17 @@ function clearFilter() {
   filterField = filterMin = filterMax = null;
   drawChart();
   updateTable();
+}
+
+function animateChart(duration = 500) {
+  const start = performance.now();
+  function frame(now) {
+    const elapsed = now - start;
+    const p = Math.min(elapsed / duration, 1);
+    drawChart(p);
+    if (p < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
 }
 
 // 툴팁 element 가져오기
