@@ -212,7 +212,7 @@ function updateTable() {
           <input
             type="number"
             value="${item.value}"
-            onchange="handleInlineEdit(${item.id}, this)"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
           />
         </td>
         <td>
@@ -267,16 +267,48 @@ let sortAsc = true;
 
 // 전체 동기화
 function applyChanges() {
-  if (!validateData(data)) return;
-  // data를 ID 기본은 오름차순으로 정렬
-  data.sort((a, b) => (sortAsc ? a.id - b.id : b.id - a.id));
+  // 원본 백업
+  const oldData = data.slice();
 
+  // 테이블에서 새 값 읽기
+  const rows = Array.from(document.querySelectorAll("#table-body tr"));
+  const newData = [];
+  for (const row of rows) {
+    const id = Number(row.cells[0].textContent);
+    const valRaw = row.cells[1].querySelector("input").value.trim();
+    if (valRaw === "") {
+      alert("모든 값 칸에 숫자를 입력해주세요.");
+      // rollback
+      updateTable();
+      return;
+    }
+    const value = Number(valRaw);
+    if (isNaN(value)) {
+      alert("값에는 숫자만 입력할 수 있습니다.");
+      updateTable();
+      return;
+    }
+    newData.push({ id, value });
+  }
+
+  // 유효성 검사
+  if (!validateData(newData)) {
+    // rollback
+    data = oldData;
+    updateJSON();
+    updateTable();
+    animateChart();
+    return;
+  }
+
+  // 정렬 후 커밋
+  data = newData.sort((a, b) => (sortAsc ? a.id - b.id : b.id - a.id));
   saveData(); // 캐시 저장
 
   // 정렬된 데이터를 반영해 JSON, 차트, 테이블에 모두 갱신
   updateJSON();
-  animateChart();
   updateTable();
+  animateChart();
 }
 
 // 토글 이벤트 핸들러
@@ -293,16 +325,34 @@ sortToggle.addEventListener("change", () => {
 function addValue() {
   const idRaw = document.getElementById("new-id").value.trim();
   const valueRaw = document.getElementById("new-value").value.trim();
+
+  // 1) 빈 값 검사
   if (!idRaw || !valueRaw) {
     alert("ID와 값을 모두 입력해주세요.");
     return;
   }
+
+  // 2) 숫자 변환
   const id = Number(idRaw);
   const value = Number(valueRaw);
-  data.push({ id, value });
+
+  if (isNaN(id) || isNaN(value)) {
+    alert("ID와 값에 숫자만 입력할 수 있습니다.");
+    return;
+  }
+
+  // 3) 새 데이터 합친 임시 배열로 검증
+  const candidate = [...data, { id, value }];
+  if (!validateData(candidate)) {
+    // validateData 내부에서 alert이 띄워지고 false를 반환
+    return;
+  }
+
+  // 4) 검증 통과 -> data 교체 및 화면 갱신
+  data = candidate;
   applyChanges();
 
-  // 입력창 초기화
+  // 5) 입력창 초기화
   document.getElementById("new-id").value = "";
   document.getElementById("new-value").value = "";
 }
@@ -315,7 +365,12 @@ function deleteValue(id) {
 
   // 확인했으면 해당 항목 삭제
   data = data.filter((d) => d.id !== id);
-  applyChanges();
+
+  // 저장 및 UI 갱신
+  saveData();
+  updateJSON(); // JSON 에디터
+  updateTable(); // 테이블
+  animateChart(); // 차트
 }
 
 // JSON 적용
@@ -325,42 +380,40 @@ function applyJson() {
   const oldData = data.slice(); // data 배열 백업
   const raw = oldRaw.trim();
 
-  // 1) 아무 입력도 없거나, 빈 배열만 있을 때
-  if (!raw || raw === "[]" || raw === "[ ]") {
-    // 텍스트박스 내용을 지우고 placeholder만 남김
-    textarea.value = "";
+  // 빈 입력 -> 전체 삭제
+  if (!raw) {
+    data = [];
+    saveData();
+    updateJSON();
+    updateTable();
+    animateChart();
     return;
   }
 
   try {
     const newData = JSON.parse(raw);
 
-    // 2) 배열 형태 검사
     if (!Array.isArray(newData)) {
       alert("JSON은 배열 형태여야 합니다.");
       textarea.value = oldRaw;
       return;
     }
-
-    // 3) 유효성 검사 (ID 및 값 -> 타입, 정수, 음수, 최대값, 중복)
     if (!validateData(newData)) {
-      textarea.value = oldRaw; // 에디터 복원
-      data = oldData; // 데이터 롤백
-      updateJSON(); // 에디터 내용 강제 갱신
+      // validateData 내부에서 alert 발생
+      textarea.value = oldRaw;
       return;
     }
 
-    // 4) 모두 통과하면 실제 적용
+    // 여기서 바로 data 교체
     data = newData;
-    applyChanges(); // 데이터 저장 -> 차트, 테이블, JSON 모두 갱신
+    saveData();
+    // UI만 갱신
+    updateJSON();
+    updateTable();
+    animateChart();
   } catch (e) {
-    // 5) JSON 파싱 실패 시
-    alert(
-      '유효하지 않은 JSON입니다.\n예시: [{"id":0,"value":75},{"id":1,"value":20}]'
-    );
-    textarea.value = oldRaw; // 에디터 복원
-    data = oldData; // 데이터 롤백
-    updateJSON(); // 에디터 내용 강제 갱신
+    alert("유효하지 않은 JSON입니다.");
+    textarea.value = oldRaw;
   }
 }
 

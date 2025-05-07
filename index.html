@@ -50,8 +50,18 @@
       <section>
         <h2>3. 값 추가</h2>
         <div class="add-group">
-          <input type="number" id="new-id" placeholder="ID" />
-          <input type="number" id="new-value" placeholder="VALUE" />
+          <input
+            type="number"
+            id="new-id"
+            placeholder="ID"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+          />
+          <input
+            type="number"
+            id="new-value"
+            placeholder="VALUE"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+          />
           <button onclick="addValue()">Add</button>
         </div>
       </section>
