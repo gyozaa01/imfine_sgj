@@ -87,8 +87,18 @@
             <option value="value">값</option>
           </select>
 
-          <input type="number" id="filter-min" placeholder="최소" />
-          <input type="number" id="filter-max" placeholder="최대" />
+          <input
+            type="number"
+            id="filter-min"
+            placeholder="최소"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+          />
+          <input
+            type="number"
+            id="filter-max"
+            placeholder="최대"
+            oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+          />
 
           <button onclick="applyFilter()">Apply</button>
           <button onclick="clearFilter()">Reset</button>

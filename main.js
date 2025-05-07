@@ -348,11 +348,16 @@ function addValue() {
     return;
   }
 
-  // 4) 검증 통과 -> data 교체 및 화면 갱신
+  // 4) 검증 통과 -> data에 커밋
   data = candidate;
-  applyChanges();
+  saveData();
 
-  // 5) 입력창 초기화
+  // 5) 화면 갱신
+  updateJSON();
+  updateTable();
+  animateChart();
+
+  // 6) 입력창 초기화
   document.getElementById("new-id").value = "";
   document.getElementById("new-value").value = "";
 }
@@ -419,13 +424,20 @@ function applyJson() {
 
 // 필터 적용
 function applyFilter() {
+  const minRaw = document.getElementById("filter-min").value.trim();
+  const maxRaw = document.getElementById("filter-max").value.trim();
+  const min = minRaw === "" ? null : Number(minRaw);
+  const max = maxRaw === "" ? null : Number(maxRaw);
+
+  if (min !== null && max !== null && min > max) {
+    alert("최소값이 최대값보다 클 수 없습니다.");
+    return;
+  }
+
   filterField = document.getElementById("filter-field").value;
-  const toNum = (id) => {
-    const v = Number(document.getElementById(id).value);
-    return isNaN(v) ? null : v;
-  };
-  filterMin = toNum("filter-min");
-  filterMax = toNum("filter-max");
+  filterMin = min;
+  filterMax = max;
+
   drawChart();
   updateTable();
 }
